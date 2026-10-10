@@ -142,4 +142,4 @@ open ./DerivedData/ArtJagat-*/Build/Products/Debug/ArtJagat.app
 | `H` | Hand Tool |
 | `Z` | Zoom Tool |
 | `X` | Tukar Warna Foreground / Background |
-| `D` | Reset Warna ke Hitam & Putih |
+| `D` | Reset Warna ke Hitam & Putih 

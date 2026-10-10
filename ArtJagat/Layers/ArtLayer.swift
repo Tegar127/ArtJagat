@@ -350,7 +350,7 @@ final class ArtLayer: ObservableObject, Identifiable {
         for (k, v) in parameters {
             filter.setValue(v, forKey: k)
         }
-        let context = CIContext(options: nil)
+        let context = RenderEngine.sharedCIContext
         guard let outputCI = filter.outputImage,
               let outputCG = context.createCGImage(outputCI, from: outputCI.extent) else { return }
         setCGImage(outputCG)
