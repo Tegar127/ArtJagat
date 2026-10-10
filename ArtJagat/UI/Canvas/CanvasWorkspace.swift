@@ -20,10 +20,23 @@ struct CanvasWorkspace: View {
 
                 if let doc = documentManager.activeDocument {
                     canvasContainer(doc: doc, viewportSize: geo.size)
+
+                    // Native macOS trackpad gestures and navigation overlay
+                    NativeCanvasGestureRepresentable(
+                        document: doc,
+                        appState: appState,
+                        viewportSize: geo.size
+                    )
                 } else {
                     Text("No Document")
                         .foregroundColor(.white.opacity(0.3))
                 }
+            }
+            .onAppear {
+                documentManager.activeDocument?.lastViewportSize = geo.size
+            }
+            .onChange(of: geo.size) { newSize in
+                documentManager.activeDocument?.lastViewportSize = newSize
             }
         }
     }
@@ -100,8 +113,7 @@ struct CanvasWorkspace: View {
 
                 switch appState.activeTool {
                 case .hand:
-                    doc.panOffset.x += value.translation.width * 0.1
-                    doc.panOffset.y += value.translation.height * 0.1
+                    break // Handled natively by NativeCanvasGestureRepresentable with smooth delta panning
 
                 case .brush:
                     guard let active = doc.activeLayer, !active.isLocked else { return }
@@ -206,7 +218,12 @@ struct CanvasWorkspace: View {
                     marqueeCurrent = nil
 
                 case .zoom:
-                    doc.zoomIn()
+                    let isOptionDown = NSEvent.modifierFlags.contains(.option)
+                    if isOptionDown {
+                        doc.zoomOut(around: value.location)
+                    } else {
+                        doc.zoomIn(around: value.location)
+                    }
 
                 default:
                     break

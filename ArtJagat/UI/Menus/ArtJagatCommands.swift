@@ -109,10 +109,16 @@ struct ArtJagatCommands: Commands {
             .keyboardShortcut("-", modifiers: .command)
             .disabled(documentManager.activeDocument == nil)
 
+            Button("Fit to Screen") {
+                documentManager.activeDocument?.zoomToFit()
+            }
+            .keyboardShortcut("0", modifiers: .command)
+            .disabled(documentManager.activeDocument == nil)
+
             Button("Actual Pixels (100%)") {
                 documentManager.activeDocument?.zoomToActualPixels()
             }
-            .keyboardShortcut("0", modifiers: .command)
+            .keyboardShortcut("1", modifiers: .command)
             .disabled(documentManager.activeDocument == nil)
 
             Divider()

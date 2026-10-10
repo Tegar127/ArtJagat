@@ -47,7 +47,7 @@ struct StatusBar: View {
                     }
                     .buttonStyle(.plain)
 
-                    Text("\(Int(doc.zoomLevel * 100))%")
+                    Text("\(Int(round(doc.zoomLevel * 100)))%")
                         .font(.system(size: 11, design: .monospaced))
                         .frame(width: 44)
 
@@ -60,12 +60,18 @@ struct StatusBar: View {
                     .buttonStyle(.plain)
 
                     Button("Fit") {
-                        // Will fit to canvas
-                        doc.setZoom(1.0)
+                        doc.zoomToFit()
                     }
                     .font(.system(size: 10))
                     .buttonStyle(.plain)
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, 2)
+
+                    Button("100%") {
+                        doc.zoomToActualPixels()
+                    }
+                    .font(.system(size: 10))
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 2)
                 }
                 .foregroundColor(.white.opacity(0.7))
             }

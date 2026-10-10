@@ -33,8 +33,12 @@ final class ArtDocument: ObservableObject, Identifiable {
     @Published var selection: SelectionState = SelectionState()
 
     // MARK: - Viewport state (per-document)
+    static let minZoomLevel: Double = 0.02
+    static let maxZoomLevel: Double = 32.0
+
     @Published var zoomLevel: Double = 1.0
     @Published var panOffset: CGPoint = .zero
+    var lastViewportSize: CGSize = CGSize(width: 1200, height: 800)
 
     // MARK: - Metadata
     let createdAt: Date
@@ -136,19 +140,50 @@ final class ArtDocument: ObservableObject, Identifiable {
     }
 
     // MARK: - Viewport
+    
+    /// Zoom relative to a focal point in the viewport, keeping that document point stable under the cursor.
+    func zoom(by factor: Double, around viewportPoint: CGPoint, in viewSize: CGSize) {
+        guard viewSize.width > 0, viewSize.height > 0 else { return }
+        let oldZoom = zoomLevel
+        let newZoom = max(Self.minZoomLevel, min(Self.maxZoomLevel, oldZoom * factor))
+        guard newZoom != oldZoom else { return }
 
-    func zoomIn() {
-        zoomLevel = min(zoomLevel * 1.25, 32.0)
+        lastViewportSize = viewSize
+
+        // Find the document point currently under viewportPoint
+        let docPoint = viewportToDocument(viewportPoint, in: viewSize)
+
+        // Calculate the new origin so that docPoint remains at viewportPoint
+        let newOriginX = viewportPoint.x - docPoint.x * newZoom
+        let newOriginY = viewportPoint.y - docPoint.y * newZoom
+
+        // Derive new panOffset from newOrigin
+        let newPanX = newOriginX - (viewSize.width - canvasSize.width * newZoom) / 2
+        let newPanY = newOriginY - (viewSize.height - canvasSize.height * newZoom) / 2
+
+        zoomLevel = newZoom
+        panOffset = CGPoint(x: newPanX, y: newPanY)
     }
 
-    func zoomOut() {
-        zoomLevel = max(zoomLevel / 1.25, 0.02)
+    func zoomIn(around point: CGPoint? = nil) {
+        let viewSize = lastViewportSize.width > 0 ? lastViewportSize : CGSize(width: 1200, height: 800)
+        let focal = point ?? CGPoint(x: viewSize.width / 2, y: viewSize.height / 2)
+        zoom(by: 1.25, around: focal, in: viewSize)
     }
 
-    func zoomToFit(viewSize: CGSize) {
-        let scaleX = viewSize.width / canvasSize.width
-        let scaleY = viewSize.height / canvasSize.height
-        zoomLevel = min(scaleX, scaleY) * 0.92
+    func zoomOut(around point: CGPoint? = nil) {
+        let viewSize = lastViewportSize.width > 0 ? lastViewportSize : CGSize(width: 1200, height: 800)
+        let focal = point ?? CGPoint(x: viewSize.width / 2, y: viewSize.height / 2)
+        zoom(by: 1.0 / 1.25, around: focal, in: viewSize)
+    }
+
+    func zoomToFit(viewSize: CGSize? = nil) {
+        let size = (viewSize != nil && viewSize!.width > 0) ? viewSize! : (lastViewportSize.width > 0 ? lastViewportSize : CGSize(width: 1200, height: 800))
+        lastViewportSize = size
+        let scaleX = size.width / canvasSize.width
+        let scaleY = size.height / canvasSize.height
+        let targetZoom = min(scaleX, scaleY) * 0.92
+        zoomLevel = max(Self.minZoomLevel, min(Self.maxZoomLevel, targetZoom))
         panOffset = .zero
     }
 
@@ -158,7 +193,7 @@ final class ArtDocument: ObservableObject, Identifiable {
     }
 
     func setZoom(_ zoom: Double) {
-        zoomLevel = max(0.02, min(32.0, zoom))
+        zoomLevel = max(Self.minZoomLevel, min(Self.maxZoomLevel, zoom))
     }
 
     // MARK: - Coordinate Conversion
